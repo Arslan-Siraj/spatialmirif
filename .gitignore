@@ -10,3 +10,4 @@ build/
 *.sdata.zarr/
 output/
 results/
+scripts/data_paths.py

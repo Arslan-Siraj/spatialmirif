@@ -22,7 +22,6 @@ def test_flat_repo_layout():
     assert (PKG / "qc" / "MIRIFAlignmentQC.py").exists()
     assert (PKG / "spatial" / "backend.py").exists()
     assert not (ROOT / "pymirimaging").exists()
-    assert not (ROOT / "scripts").exists()
     assert not (ROOT / "src").exists()
 
 
