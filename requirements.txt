@@ -1,0 +1,2 @@
+# Editable install is preferred: python -m pip install -e ".[dev]"
+-e .

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spatialmirif"
+version = "0.1.0"
+description = "MIR spectroscopy and immunofluorescence imaging"
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["mid-infrared", "immunofluorescence", "spatialdata", "hyperspectral imaging"]
+dependencies = [
+ "numpy>=2.0", "zarr>=3.0", "dask[array]>=2026.3.0", "spatialdata>=0.8,<0.9",
+ "SimpleITK>=2.4", "scipy>=1.12", "scikit-image>=0.24",
+ "scikit-learn>=1.5", "matplotlib>=3.9"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "build>=1.2", "ruff>=0.8", "ipykernel>=6.29", "jupyterlab>=4"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["spatialmirif*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
