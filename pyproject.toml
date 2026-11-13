@@ -34,3 +34,6 @@ include = ["spatialmirif*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools.package-data]
+"spatialmirif.workflows" = ["configs/*.json"]
