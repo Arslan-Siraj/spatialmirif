@@ -1,0 +1,275 @@
+version: 1
+metadata:
+  content_hash: {}
+  channels:
+    - url: defaults
+      used_env_vars: []
+  platforms:
+    - win-64
+  sources:
+    - ''
+  time_metadata:
+    created_at: '2026-11-13T07:42:35Z'
+  custom_metadata:
+    created_by: conda-lockfiles 0.2.1
+package:
+  - name: bzip2
+    version: 1.0.8
+    manager: conda
+    platform: win-64
+    dependencies:
+      vc: '>=14.1,<15.0a0'
+      vs2015_runtime: '>=14.16.27012,<15.0a0'
+    url: https://repo.anaconda.com/pkgs/main/win-64/bzip2-1.0.8-h2bbff1b_6.conda
+    hash:
+      md5: 33e784123d565c38e68945f07b461282
+      sha256: 4e30c9bfd4501555b0859c863e95ea044290babf3bf190b9d4fb38b06cf15c3c
+    category: main
+    optional: false
+  - name: ca-certificates
+    version: 2026.8.13
+    manager: conda
+    platform: win-64
+    dependencies: {}
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/ca-certificates-2026.8.13-haa95532_0.conda
+    hash:
+      md5: 4f009edb3dfadbb5db5203a13eadb846
+      sha256: c63a3f6d352cd26637bbec680954160d544a82e88543929e0b88d287109fc83f
+    category: main
+    optional: false
+  - name: libexpat
+    version: 2.8.5
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/libexpat-2.8.5-hd7fb8db_1.conda
+    hash:
+      md5: d10141d34cb68b4fd74b076145e64618
+      sha256: 5856d80b2eedfdc526ccbebf7b5b7d0abd4b84e0231cab1b3c30016491831b0a
+    category: main
+    optional: false
+  - name: libffi
+    version: 3.4.8
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/libffi-3.4.8-h42d73b9_3.conda
+    hash:
+      md5: 8e18977967bec00d09d85778525d661b
+      sha256: 52fa61549a14619aa53c0ae875f6d969fd97c92edffce64bfd7277e2557a726e
+    category: main
+    optional: false
+  - name: libzlib
+    version: 1.3.2
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/libzlib-1.3.2-h1c6eee0_0.conda
+    hash:
+      md5: ffdad8ab74f765222bdf2e3473e12c76
+      sha256: ee9ff49405717b96ec8d9b586beaaf96b741ffc4d37df6623f1d599ab8bdbb14
+    category: main
+    optional: false
+  - name: openssl
+    version: 3.5.9
+    manager: conda
+    platform: win-64
+    dependencies:
+      ca-certificates: ''
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/openssl-3.5.9-hbb43b14_0.conda
+    hash:
+      md5: c1c51e52fe981aef404be2250f1dfb18
+      sha256: 21eb85790bfa29ef178a40951afb72ce9b67e08a6ed836ebe5571e68fbbbd512
+    category: main
+    optional: false
+  - name: packaging
+    version: '26.3'
+    manager: conda
+    platform: win-64
+    dependencies:
+      python: '>=3.12,<3.13.0a0'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/packaging-26.3-py312haa95532_0.conda
+    hash:
+      md5: 64105ca3fa7c8852e92de6439d9e2d29
+      sha256: 672296beed81491ed3245f92d3527fad5d905772357471e69bd1a85486d5a504
+    category: main
+    optional: false
+  - name: python
+    version: 3.12.14
+    manager: conda
+    platform: win-64
+    dependencies:
+      bzip2: '>=1.0.8,<2.0a0'
+      libexpat: '>=2.8.2,<3.0a0'
+      libffi: '>=3.4.8,<3.5.0a0'
+      libzlib: '>=1.3.2,<2.0a0'
+      openssl: '>=3.5.7,<4.0a0'
+      sqlite: '>=3.53.2,<4.0a0'
+      tk: '>=8.6.15,<8.7.0a0'
+      tzdata: ''
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+      xz: '>=5.8.2,<6.0a0'
+      pip: ''
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/python-3.12.14-hd7b1df3_0.conda
+    hash:
+      md5: f875a8a8f6e72cb1d789cf186477762e
+      sha256: 0ecc0e4c7a2d8a9683d6162b6c7de2cbd9c62694fd1290e3ffc228c12cf425ce
+    category: main
+    optional: false
+  - name: setuptools
+    version: 83.0.0
+    manager: conda
+    platform: win-64
+    dependencies:
+      python: '>=3.12,<3.13.0a0'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/setuptools-83.0.0-py312haa95532_0.conda
+    hash:
+      md5: 40f0f95bd18e8ee163fc450eee1a208d
+      sha256: fe020c48f79b0eac8d4cece368226d46f8bd1b1dc37a7666b591e31b5977bf25
+    category: main
+    optional: false
+  - name: sqlite
+    version: 3.53.4
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/sqlite-3.53.4-hee5a0db_0.conda
+    hash:
+      md5: fc36e4a70e3cc8104ec96a4ca359d15b
+      sha256: 8adb7b42e99594567e5789c33813b90cc7669183d6760836150ce8a23a7d3813
+    category: main
+    optional: false
+  - name: tk
+    version: 8.6.15
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.2,<15'
+      vc14_runtime: '>=14.29.30133'
+      zlib: '>=1.2.13,<2.0.0a0'
+    url: https://repo.anaconda.com/pkgs/main/win-64/tk-8.6.15-hf199647_0.conda
+    hash:
+      md5: ddff7b6a72958ef802f40a735e505474
+      sha256: 2f7e9d06b513bcabce6d9ae195e45ccf94fd249edfefc591a5430a9f6f92a7fa
+    category: main
+    optional: false
+  - name: ucrt
+    version: 10.0.22621.0
+    manager: conda
+    platform: win-64
+    dependencies: {}
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/ucrt-10.0.22621.0-haa95532_0.conda
+    hash:
+      md5: 15e1b10231d7d236520501fcfb440f31
+      sha256: 9dfca4fb23f20e62a48b9c52e2fdf4d0d34bb31eb6a930c2195fcd10651b3cc3
+    category: main
+    optional: false
+  - name: vc
+    version: '14.3'
+    manager: conda
+    platform: win-64
+    dependencies:
+      vc14_runtime: '>=14.42.34433'
+    url: https://repo.anaconda.com/pkgs/main/win-64/vc-14.3-h2df5915_12.conda
+    hash:
+      md5: 6737bfee92a331a876eadd8a2af7bc09
+      sha256: 81f68bd3f7e74032547fc3c2b1d7d914b2688cc11f2470625c5c65d49d1474bd
+    category: main
+    optional: false
+  - name: vc14_runtime
+    version: 14.44.35208
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/vc14_runtime-14.44.35208-h4927774_12.conda
+    hash:
+      md5: 061ea1cc93ee2dd574defcaa4e93c4e5
+      sha256: 492ba65a50d99120e047469057f5eaddd3043cf17a18761653d1b3ae5d9d6c84
+    category: main
+    optional: false
+  - name: vs2015_runtime
+    version: 14.44.35208
+    manager: conda
+    platform: win-64
+    dependencies:
+      vc14_runtime: '>=14.44.35208'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/vs2015_runtime-14.44.35208-ha6b5a95_12.conda
+    hash:
+      md5: 74783ea081af58781a57cf9ec9b09008
+      sha256: 5b484a4b7df0133f60fd9e12dcf1926f868eaa34a2c3ddad8475169a1a99d9fa
+    category: main
+    optional: false
+  - name: wheel
+    version: 0.47.0
+    manager: conda
+    platform: win-64
+    dependencies:
+      packaging: '>=26.0'
+      python: '>=3.12,<3.13.0a0'
+    url: 
+      https://repo.anaconda.com/pkgs/main/win-64/wheel-0.47.0-py312haa95532_0.conda
+    hash:
+      md5: 2ea3bb96b968ed9249a3e4cb1c42b17a
+      sha256: df4602884a5ba42105bcdccdccad37c29c26d4d2bda4b94916e0cc72a7c4bc3e
+    category: main
+    optional: false
+  - name: xz
+    version: 5.8.4
+    manager: conda
+    platform: win-64
+    dependencies:
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: https://repo.anaconda.com/pkgs/main/win-64/xz-5.8.4-hb851c79_0.conda
+    hash:
+      md5: b0c7a36026c7f0b764fc8118ff0bb4b4
+      sha256: 786d5df4b6f0097eeef2c07c642119a80b8b97ed062fd956707d2810bd15428a
+    category: main
+    optional: false
+  - name: zlib
+    version: 1.3.2
+    manager: conda
+    platform: win-64
+    dependencies:
+      libzlib: 1.3.2
+      ucrt: '>=10.0.20348.0'
+      vc: '>=14.3,<15'
+      vc14_runtime: '>=14.44.35208'
+    url: https://repo.anaconda.com/pkgs/main/win-64/zlib-1.3.2-h1c6eee0_0.conda
+    hash:
+      md5: 5885e2a4e16e0ba2f1792f3d61ef41f9
+      sha256: 538f7c9b5ed6fa388c51bd499c736fd474826bcd7f2908456e9d2050b486e476
+    category: main
+    optional: false
