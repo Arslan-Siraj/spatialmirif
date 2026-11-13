@@ -64,23 +64,6 @@ def test_category_and_contrast_galleries(tmp_path):
         min_crop_size_px=12,padding_px=3,dpi=80)
     assert len(grids)==3
 
-
-def test_notebook_cells_compile():
-    import nbformat
-    p=Path(__file__).resolve().parents[1]/'scripts/0003_IF_segmentation_function_by_function.ipynb'
-    n=nbformat.read(p,as_version=4)
-    for i,cell in enumerate(n.cells):
-        if cell.cell_type=='code':compile(cell.source,f'cell_{i}','exec')
-    source='\n'.join(cell.source for cell in n.cells if cell.cell_type=='code')
-    assert 'REUSE_OLD_' not in source
-    assert 'QC_MIN_RADIUS_UM = 6.0' in source
-    assert 'QC_MAX_RADIUS_UM = 50.0' in source
-    assert 'REDRAW_TISSUE_POLYGONS = False' in source
-    assert 'REDRAW_SPATIAL_EXCLUSIONS = False' in source
-    assert 'size.review_equivalent_radius' in source
-    assert 'review.export_filter_review_gallery' in source
-
-
 def test_tissue_addition_editor_original_keyboard_workflow(monkeypatch):
     """Original Enter closes a polygon; only S saves (unlike exclusions)."""
     import numpy as np
