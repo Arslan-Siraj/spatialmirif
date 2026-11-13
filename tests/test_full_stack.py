@@ -126,8 +126,8 @@ def test_fluorescence_mask_generates_sitk_image(tmp_path):
 
 
 def test_qc_checks_already_aligned_images(tmp_path):
-    a = np.zeros((32, 32), np.float32)
-    a[8:25, 10:20] = np.random.default_rng(17).random((17, 10))
+    a = np.zeros((400, 400), np.float32)
+    a[50:350, 50:350] = np.random.default_rng(17).random((300, 300))
     mask = (a > .7).astype(np.uint8)
     im = sitk.GetImageFromArray(a)
     im.SetSpacing((.004, .004))
