@@ -125,22 +125,67 @@ def test_fluorescence_mask_generates_sitk_image(tmp_path):
     assert 'if_raw' in masker.GetSpatialData().images
 
 
+
 def test_qc_checks_already_aligned_images(tmp_path):
     a = np.zeros((400, 400), np.float32)
     a[50:350, 50:350] = np.random.default_rng(17).random((300, 300))
-    mask = (a > .7).astype(np.uint8)
+
+    mask = (a > 0.7).astype(np.uint8)
+
     im = sitk.GetImageFromArray(a)
-    im.SetSpacing((.004, .004))
+    im.SetSpacing((0.004, 0.004))
+
     mk = sitk.GetImageFromArray(mask)
     mk.CopyInformation(im)
+
     qc = smi.MIRIFAlignmentQC(
-        brightfield=im, mir_aligned=im, if_aligned=im, mask_aligned=mk,
-        output_dir=tmp_path / 'qc', save_figures=False,
-        auto_refine=False, min_gradient_ncc=0.0, min_edge_dice=0.0,
+        brightfield=im,
+        mir_aligned=im,
+        if_aligned=im,
+        mask_aligned=mk,
+        output_dir=tmp_path / "qc",
+        save_figures=False,
+        auto_refine=False,
+        min_gradient_ncc=0.0,
+        min_edge_dice=0.0,
     )
+
     summary = qc.Run()
-    assert summary['status'] == 'PASS'
-    assert 'if_aligned' in qc.GetSpatialData().images
-    assert 'mask_aligned' in qc.GetSpatialData().labels
-    assert qc.GetFinalIFImage().GetSize() == im.GetSize()
-    assert qc.GetSummary()['same_grid_as_mir']['if_aligned']
+
+    # Verify successful QC completion
+    assert summary["pipeline_status"] == (
+        "READY_WITH_ORIGINAL_INITIAL ALIGNMENT_PLACEMENT"
+    )
+
+     
+    # Verify the final IF image and mask are available
+    final_if = qc.GetFinalIFImage()
+    final_mask = qc.GetFinalMaskImage()
+
+    assert isinstance(final_if, sitk.Image)
+    assert isinstance(final_mask, sitk.Image)
+
+    # Verify final dimensions match the MIR image
+    assert final_if.GetSize() == im.GetSize()
+    assert final_mask.GetSize() == im.GetSize()
+
+    # Verify final physical geometry
+    for result in (final_if, final_mask):
+        np.testing.assert_allclose(
+            result.GetSpacing(), im.GetSpacing()
+        )
+        np.testing.assert_allclose(
+            result.GetOrigin(), im.GetOrigin()
+        )
+        np.testing.assert_allclose(
+            result.GetDirection(), im.GetDirection()
+        )
+
+    # Verify the QC summary reports correct grid alignment
+    assert summary["if_on_mir_grid"] is True
+    assert summary["mask_on_mir_grid"] is True
+
+    # Verify images are on the MIR grid
+    assert summary["if_on_mir_grid"] is True
+    assert summary["mask_on_mir_grid"] is True
+
