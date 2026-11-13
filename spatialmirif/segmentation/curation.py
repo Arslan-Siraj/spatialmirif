@@ -5,7 +5,8 @@ from ._stage import Stage, as_2d
 
 
 def apply_manual_decisions(labels, qc_rows, *, include_ids=(),exclude_ids=(),
-                           sample_name=None,source_path=None,reference=None,save_dir=None):
+                           sample_name=None,source_path=None,reference=None,save_dir=None,
+                           final_output_dir=None):
     """ID-based overrides: manual exclusion > manual inclusion > automatic QC."""
     ids = as_2d(labels)
     all_ids=set(map(int,np.unique(ids))) - {0}
@@ -49,9 +50,57 @@ def apply_manual_decisions(labels, qc_rows, *, include_ids=(),exclude_ids=(),
     stage.mask('excluded_binary',excluded)
     stage.preview('included_binary',included)
     stage.preview('excluded_binary',excluded)
+    # Original S1_N3 notebook's naming scheme, alongside general stage outputs.
+    if sample_name:
+        stage.csv(f'{sample_name}_all_candidates_audit', records)
+        stage.csv(f'{sample_name}_included_plaques',
+                  [row for row in records if row['final_accepted']])
+        stage.csv(f'{sample_name}_excluded_plaques',
+                  [row for row in records if not row['final_accepted']])
+        stage.mask(f'{sample_name}_included_original_IDs',
+                   np.where(included, ids, 0).astype(np.uint32))
+        stage.mask(f'{sample_name}_excluded_original_IDs',
+                   np.where(excluded, ids, 0).astype(np.uint32))
+        stage.mask(f'{sample_name}_included_binary', included)
+        stage.json(f'{sample_name}_final_settings',
+                   {'manual_include_ids': sorted(manual_include),
+                    'manual_exclude_ids': sorted(manual_exclude),
+                    'accepted_count': len(accepted_ids),
+                    'excluded_count': len(excluded_ids)})
+    if final_output_dir is not None:
+        if reference is None:
+            raise ValueError('A reference IF image is required for final NRRD exports')
+        final_stage=Stage(final_output_dir,reference)
+        stem=(sample_name or 'sample')+'_IF'
+        final_stage.mask(f'{stem}_positive_plaques_binary', included)
+        final_stage.mask(f'{stem}_positive_plaques_original_IDs',
+                         np.where(included,ids,0).astype(np.uint32))
+        final_stage.mask(f'{stem}_excluded_candidates_binary',excluded)
+        final_stage.mask(f'{stem}_excluded_candidates_original_IDs',
+                         np.where(excluded,ids,0).astype(np.uint32))
+        final_stage.csv(f'{stem}_positive_plaques',
+                        [r for r in records if r['final_accepted']])
+        final_stage.csv(f'{stem}_excluded_candidates',
+                        [r for r in records if not r['final_accepted']])
+        final_stage.csv(f'{stem}_all_candidates_audit', records)
+        from ._stage import grid_info
+        final_stage.json('FINAL_positive_plaques_summary', {
+            'sample_name':sample_name, 'source_if_path':str(source_path) if source_path else None,
+            'grid':grid_info(reference),
+            'accepted_original_ids':accepted_ids,'excluded_original_ids':excluded_ids,
+            'accepted_count':len(accepted_ids),'excluded_count':len(excluded_ids),
+            'manual_include_ids':sorted(manual_include),
+            'manual_exclude_ids':sorted(manual_exclude),
+            'positive_binary_nrrd':f'{stem}_positive_plaques_binary.nrrd',
+            'positive_original_id_nrrd':f'{stem}_positive_plaques_original_IDs.nrrd',
+            'excluded_binary_nrrd':f'{stem}_excluded_candidates_binary.nrrd',
+            'excluded_original_id_nrrd':f'{stem}_excluded_candidates_original_IDs.nrrd',
+            'geometry': 'Aligned original IF image; not resampled to MIR grid',
+            'original_id_semantics': 'Stable candidate labels from the LoG/Triangle selection stage'})
     stage.json('decisions', {'manual_include_ids':sorted(manual_include),
                              'manual_exclude_ids':sorted(manual_exclude),
                              'original_count':len(all_ids), 'accepted_count':len(accepted_ids),
                              'excluded_count':len(excluded_ids)})
-    return {'rows':records,'accepted_mask':included,'excluded_mask':excluded,
+    return {'rows':records,'final_output_dir':str(final_output_dir) if final_output_dir else None,
+            'accepted_mask':included,'excluded_mask':excluded,
             'accepted_ids':accepted_ids,'excluded_ids':excluded_ids}

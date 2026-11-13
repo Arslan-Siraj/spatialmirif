@@ -21,7 +21,7 @@ def detect_blobs_log(binary, *, spacing_xy_um, min_radius_um=5, max_radius_um=40
     pitch = (sx + sy)/2.
     sigma_min = min_radius_um / (np.sqrt(2)*pitch)
     sigma_max = max_radius_um / (np.sqrt(2)*pitch)
-    blobs = blob_log(m.astype(np.float32), min_sigma=sigma_min, max_sigma=sigma_max,
+    blobs = blob_log(m.astype(float), min_sigma=sigma_min, max_sigma=sigma_max,
                      num_sigma=num_sigma, threshold_rel=threshold_rel,
                      overlap=overlap, log_scale=log_scale) if m.any() else np.empty((0,3))
     circle_support = np.zeros_like(m)

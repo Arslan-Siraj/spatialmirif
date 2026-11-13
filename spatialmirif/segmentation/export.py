@@ -7,7 +7,7 @@ from ._stage import Stage, as_2d, grid_info
 
 
 def export_negative_protection(analysis_mask,exclusion_mask,triangle_mask,all_candidates,
-                               *,reference,save_dir):
+                               *,reference,save_dir,sample_name=None):
     """Archive uncertain/positive regions BEFORE final human ID curation.
 
     Negative MIR sampling must avoid both accepted and uncertain candidates.
@@ -21,6 +21,17 @@ def export_negative_protection(analysis_mask,exclusion_mask,triangle_mask,all_ca
     for name,m in masks.items():
         stage.mask(name,m)
         stage.preview(name,m)
+    # Also write the four exact legacy handoff filename patterns; the data
+    # and geometry are the same as the reusable unprefixed stage outputs.
+    if sample_name:
+        aliases = {
+            'analysis_tissue': 'IF_tissue_analysis_mask',
+            'manual_spatial_exclusions': 'IF_manual_exclusion_mask',
+            'all_triangle_positive': 'IF_triangle_positive_mask',
+            'all_log_candidates': 'IF_ALL_LoG_candidates_including_flagged',
+        }
+        for source_name, old_name in aliases.items():
+            stage.mask(f'{sample_name}_{old_name}', masks[source_name])
     stage.json('summary',{'purpose':'protect positive and uncertain IF regions from negative sampling',
                           'pixels':{k:int(m.sum()) for k,m in masks.items()},
                           'source_geometry':grid_info(reference)})

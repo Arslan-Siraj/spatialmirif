@@ -50,19 +50,24 @@ class IFPositivePlaqueDetection:
         self.analysis=tissue.exclude_boundary_band(comp['selected'],margin_um=margin_um,
                   spacing_xy_um=self.spacing,reference=self.source,
                   save_dir=self.stage(5,'analysis_region'))
+        self.analysis_before_exclusion=self.analysis['analysis_mask'].copy()
         return self.analysis
 
     def CompareThresholds(self,**kwargs):
         self.threshold_result=thresholding.compare_thresholds(self.raw,self.analysis['analysis_mask'],
                        reference=self.source,save_dir=self.stage(6,'threshold_comparison'),**kwargs)
         self.triangle=self.threshold_result['masks']['triangle']
+        self.triangle_before_exclusion=self.triangle.copy()
         return self.threshold_result
 
     def ApplyExclusions(self,exclusions,*,buffer_um=0):
-        self.exclusion_result=annotations.apply_exclusions(self.triangle,exclusions,
+        self.exclusion_result=annotations.apply_spatial_exclusions(
+                  self.analysis_before_exclusion,self.triangle_before_exclusion,exclusions,
                   buffer_um=buffer_um,spacing_xy_um=self.spacing,reference=self.source,
+                  sample_name=self.sample_name,
                   save_dir=self.stage(7,'manual_spatial_exclusions'))
-        self.triangle=self.exclusion_result['mask']
+        self.triangle=self.exclusion_result['candidate_mask']
+        self.analysis['analysis_mask']=self.exclusion_result['tissue_analysis_mask']
         return self.exclusion_result
 
     def DetectBlobs(self,**kwargs):

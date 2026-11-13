@@ -154,3 +154,117 @@ def test_gallery_preserves_ids(tmp_path):
     assert all(Path(row['path']).exists() for row in out)
     assert (tmp_path/'gallery_manifest.csv').exists()
     assert np.max(labels)==27
+
+
+def test_new_annotation_first_draw_then_reuse_then_redraw(tmp_path, monkeypatch):
+    """First run draws, later runs reuse; no old masks are imported."""
+    import json
+    import hashlib
+    from spatialmirif.segmentation import annotations
+
+    image = np.zeros((32, 40), dtype=np.uint8)
+    image[4:9, 4:10] = 100
+    reference = image.copy()
+    folder = tmp_path / 'fresh_tissue_polygons'
+    calls = []
+    stored = {}
+
+    def fake_editor(im, *, starting_mask=None, starting_shapes=None,
+                    mode, title, return_shapes):
+        calls.append(mode)
+        assert return_shapes is True
+        result = np.asarray(starting_mask).copy()
+        result[3:6, 5:9] = True
+        shapes = list(starting_shapes or []) + [
+            {'mode': 'polygon', 'points_xy': [[5, 3], [8, 3], [7, 5]]}
+        ]
+        return result, shapes
+
+    def fake_save(mask, ref, directory, *, sample_name, kind,
+                  shapes, polygons_xy, source_sha256):
+        directory = Path(directory)
+        directory.mkdir(parents=True, exist_ok=True)
+        stored['mask'] = mask.copy()
+        (directory / 'annotation_mask.nrrd').write_bytes(b'mock NRRD')
+        (directory / 'annotation.json').write_text(json.dumps({
+            'source_sha256': source_sha256, 'shapes': shapes, 'kind': kind,
+            'sample_name': sample_name
+        }))
+        return directory
+
+    monkeypatch.setattr(annotations, 'edit_annotation', fake_editor)
+    monkeypatch.setattr(annotations, 'save_annotation', fake_save)
+    monkeypatch.setattr(annotations, 'load_annotation',
+                        lambda *a, **kw: stored['mask'].copy())
+
+    initial = annotations.get_or_draw_annotation(
+        image, reference, save_dir=folder, sample_name='S1_N3',
+        kind='addition', mode='polygon')
+    assert initial['status'] == 'new_annotation_drawn'
+    assert len(calls) == 1
+    assert initial['mask'].any()
+    assert len(initial['shapes']) == 1
+
+    reused = annotations.get_or_draw_annotation(
+        image, reference, save_dir=folder, sample_name='S1_N3',
+        kind='addition', mode='polygon')
+    assert reused['status'] == 'reused_saved_annotation'
+    assert len(calls) == 1
+    assert np.array_equal(reused['mask'], initial['mask'])
+
+    updated = annotations.get_or_draw_annotation(
+        image, reference, save_dir=folder, sample_name='S1_N3',
+        kind='addition', mode='polygon', redraw=True)
+    assert updated['status'] == 'redrawn_annotation'
+    assert len(calls) == 2
+    assert len(updated['shapes']) == 2
+
+    changed_image = image.copy()
+    changed_image[0, 0] = 123
+    with pytest.raises(ValueError, match='not confirmed for this exact IF pixel array'):
+        annotations.get_or_draw_annotation(
+            changed_image, reference, save_dir=folder,
+            sample_name='S1_N3', kind='addition', mode='polygon')
+    assert len(calls) == 2
+
+
+def test_first_run_refuses_partially_saved_annotation(tmp_path):
+    from spatialmirif.segmentation import annotations
+    im = np.zeros((20, 20), np.uint8)
+    folder = tmp_path / 'incomplete'
+    folder.mkdir()
+    (folder / 'annotation.json').write_text('{}')
+    with pytest.raises(FileNotFoundError, match='partially saved'):
+        annotations.get_or_draw_annotation(
+            im, im, save_dir=folder, sample_name='X', kind='exclusion')
+
+
+def test_new_annotation_with_real_nrrd_when_sitk_available(tmp_path, monkeypatch):
+    sitk = pytest.importorskip('SimpleITK')
+    from spatialmirif.segmentation import annotations
+    im = sitk.GetImageFromArray(np.zeros((1, 40, 50), dtype=np.uint8))
+    im.SetSpacing((0.0048, 0.0048, 0.01))
+    im.SetOrigin((15.8, 3.0, 0.0))
+    array = np.zeros((40, 50), np.uint8)
+    mask = np.zeros_like(array, dtype=bool)
+    mask[4:14, 5:16] = True
+    called = []
+
+    def mock_editor(*args, **kwargs):
+        called.append(True)
+        return mask.copy(), [{'mode': 'polygon',
+                              'points_xy': [[5, 4], [15, 4], [15, 13]]}]
+
+    monkeypatch.setattr(annotations, 'edit_annotation', mock_editor)
+    folder = tmp_path / 'tissue'
+    r1 = annotations.get_or_draw_annotation(
+        array, im, save_dir=folder, sample_name='X', kind='addition')
+    r2 = annotations.get_or_draw_annotation(
+        array, im, save_dir=folder, sample_name='X', kind='addition')
+    assert len(called) == 1
+    assert r1['status'] == 'new_annotation_drawn'
+    assert r2['status'] == 'reused_saved_annotation'
+    assert np.array_equal(r2['mask'], mask)
+    loaded = sitk.ReadImage(str(folder / 'annotation_mask.nrrd'))
+    from spatialmirif.segmentation._stage import check_same_grid
+    assert check_same_grid(loaded, im)
