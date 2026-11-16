@@ -1,0 +1,47 @@
+{
+  "$schema_version": 1,
+  "sample_name": "{section_tag}",
+  "paths": {
+    "mir_reference_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_MIR_1650_pymir_align.nrrd",
+    "if_accepted_ids_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\FINAL_positive_plaques\\{section_tag}_IF_positive_plaques_original_IDs.nrrd",
+    "if_excluded_ids_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\FINAL_positive_plaques\\{section_tag}_IF_excluded_candidates_original_IDs.nrrd",
+    "if_all_candidates_csv": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\FINAL_positive_plaques\\{section_tag}_IF_all_candidates_audit.csv",
+    "if_analysis_tissue_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\15_negative_protection\\analysis_tissue.nrrd",
+    "if_manual_exclusion_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\15_negative_protection\\manual_spatial_exclusions.nrrd",
+    "if_triangle_positive_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\15_negative_protection\\all_triangle_positive.nrrd",
+    "if_all_log_candidates_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques\\15_negative_protection\\all_log_candidates.nrrd",
+    "mir_zarr": "actual-path-to\\{section_tag}\\2.zarr",
+    "mir_info": "actual-path-to\\MMI2_AD_Slide_1_090126_TissuePlus_Transmission_no_SF_INFO.txt",
+    "output_dir": "actual-path-to\\{section_tag}\\{section_tag}_MIR_patch_dataset"
+  },
+  "parameters": {
+    "patch_size": 16,
+    "random_seed": 42,
+    "protection_margin_mir_px": 2,
+    "negative_to_green_ratio": 1,
+    "positive_high_tissue_percent": 90.0,
+    "positive_low_tissue_percent": 70.0,
+    "positive_edge_distance_mir_px": 2.0,
+    "positive_max_manual_exclusion_percent": 0.0,
+    "positive_min_finite_mir_1650_percent": 100.0,
+    "if_qc_min_equivalent_radius_um_for_plot": 6.0,
+    "if_qc_max_equivalent_radius_um_for_plot": 50.0,
+    "zarr_pz_um": 10.0,
+    "zarr_normalization": "None",
+    "zarr_pooling": "None",
+    "zarr_image_normalization": "None",
+    "zarr_spectral_selection": "Nearest",
+    "zarr_tolerance": 0.0
+  },
+  "output_options": {
+    "run_label": "{section_tag}_patch_dataset",
+    "overwrite_existing": false,
+    "save_figures": true,
+    "show_figures": false,
+    "hash_inputs": false,
+    "run_full_spectral_qc": false,
+    "confirm_zarr_mir_identical_pixel_indexing": false,
+    "export_training_spectra": false,
+    "export_size_excluded_spectra": false
+  }
+}
