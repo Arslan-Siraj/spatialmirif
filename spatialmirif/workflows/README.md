@@ -42,3 +42,17 @@ print(result['counts']['final_accepted'])
 # will check later if need a files name directly for other workflow run after this? 
 # so all-in-1 workflows might possible for each section
 ```
+
+# `spatialmirif` IF-positive/Negative patches extraction: direct JSON execution
+
+```powershell
+python spatialmirif/workflows/MIRPatchDataset.py --config-json spatialmirif/workflows/configs/config_MIR_patch_datasets.json --check-inputs
+python spatialmirif/workflows/MIRPatchDataset.py --config-json spatialmirif/workflows/configs/config_MIR_patch_datasets.json
+```
+
+```python
+from spatialmirif.workflows import MIRPatchDataset
+result = MIRPatchDataset.RunFromConfig(
+    r'spatialmirif/workflows/configs/config_MIR_patch_datasets.json'
+)
+```
