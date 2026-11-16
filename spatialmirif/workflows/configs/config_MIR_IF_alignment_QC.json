@@ -1,0 +1,35 @@
+{
+  "$schema_version": 1,
+  "sample_name": "{section_tag}",
+  "paths": {
+    "brightfield": "actual-path-to\\PPS_Slide_1_BF_10x.nrrd",
+    "mir_aligned": "actual-path-to\\{section_tag}\\{section_tag}_MIR_1650_pymir_align.nrrd",
+    "if_aligned": "actual-path-to\\{section_tag}\\{section_tag}_IF_align.nrrd",
+    "mask_aligned": "actual-path-to\\{section_tag}\\{section_tag}_IF_mask_pymir_align.nrrd",
+    "output_dir": "actual-path-to\\{section_tag}\\output_with_spatialmirif\\MIR_IF_alignment_QC"
+  },
+  "parameters": {
+    "plaque_radius_um": 40.0,
+    "plaque_zoom_count": 12,
+    "plaque_zoom_selection": "random",
+    "plaque_zoom_seed": 20,
+    "auto_refine": true,
+    "gross_max_shift_um": 120.0,
+    "gross_max_rotation_deg": 1.5,
+    "min_gradient_ncc": 0.1,
+    "min_edge_dice": 0.4,
+    "direct_max_shift_um": 50.0,
+    "direct_max_rotation_deg": 0.25,
+    "min_score_gain": 0.003,
+    "rotation_min_extra_gain": 0.003,
+    "post_max_residual_shift_um": 15.0,
+    "post_max_rotation_deg": 0.25,
+    "post_max_score_gain": 0.003,
+    "save_figures": true,
+    "show_figures": false
+  },
+  "output_options": {
+    "run_label": "run-test-alignment-qc",
+    "hash_inputs": false
+  }
+}
