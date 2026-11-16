@@ -34,14 +34,17 @@ class IFPositivePlaqueDetection:
         """Run one whole section from a JSON file; return run summary."""
         return run_section(config_json)
 
-    def __init__(self,source,output_dir,sample_name='sample'):
+    def __init__(self,source,output_dir,sample_name='sample',*,append_sample_folder=True):
         import SimpleITK as sitk
         if isinstance(source,(str,Path)):source=sitk.ReadImage(str(source))
         if hasattr(source,'image'):source=source.image
         self.source=source
         self.raw=as_2d(source)
         self.spacing=spacing_um(source)
-        self.output_dir=Path(output_dir)/sample_name
+        # Keep historical per-sample nesting for manual/stepwise class use.
+        # The JSON-driven runner uses append_sample_folder=False for flat output.
+        self.output_dir=(Path(output_dir)/sample_name if append_sample_folder
+                         else Path(output_dir))
         self.sample_name=sample_name
         self.stages={}
 
@@ -504,12 +507,11 @@ import re
 import shutil
 import sys
 import traceback
-import uuid
 
 PARAMETER_KEYS = set('''BACKGROUND_EPSILON BACKGROUND_INNER_UM BACKGROUND_OUTER_UM CIRCULARITY_REVIEW CONTEXT_CROP_PADDING_PX CONTEXT_MIN_CROP_SIZE_PX CONTEXT_REVIEW_DPI CONTEXT_SKIP_EXISTING_IMAGES CONTRAST_REVIEW_DPI CONTRAST_SKIP_EXISTING_IMAGES CROP_PADDING_PX ECCENTRICITY_REVIEW EDGE_REVIEW_UM EXAMPLES_PER_GROUP EXCLUSION_BUFFER_UM EXPECTED_IF_PIXEL_SIZE_UM EXPECTED_MIR_PIXEL_SIZE_UM EXPORT_CONTRAST_COMPARISON_GALLERY EXPORT_DOTTED_CHAIN_GROUP_IMAGES EXPORT_INDIVIDUAL_GALLERIES EXPORT_INDIVIDUAL_IMAGES FIXED_THRESHOLD GC_EVERY GLOBAL_RANDOM_SEED HYSTERESIS_LOW_FACTOR IGNORE_MANUAL_EXCLUSION_METADATA IGNORE_MANUAL_POLYGON_METADATA KEEP_LARGEST_TISSUE_COMPONENT LOG_NUM_SIGMA LOG_OVERLAP LOG_RADIUS_FACTOR LOG_SCALE LOG_THRESHOLD_REL MANUAL_EXCLUDE_IDS MANUAL_INCLUDE_IDS MAX_PER_QC_CATEGORY MAX_RADIUS_UM MAX_SMALL_AREA_PX MIN_BACKGROUND_PIXELS MIN_COMPONENT_OVERLAP MIN_CROP_SIZE_PX MIN_DOTS_IN_CHAIN MIN_LINE_RATIO MIN_RADIUS_UM MIN_SHAPE_PIXELS NEIGHBOR_DISTANCE_UM QC_DOTTED_CHAIN QC_ELONGATED QC_IRREGULAR_SHAPE QC_LOCAL_CONTRAST QC_MAX_RADIUS_UM QC_MIN_LOCAL_CONTRAST QC_MIN_RADIUS_UM QC_REVIEW_EXPORT QC_SIZE QC_TISSUE_EDGE REDRAW_EXCLUSIONS REDRAW_TISSUE_POLYGON REVIEW_PROGRESS_EVERY SAVE_CONTRAST_COMPARISON SAVE_CONTRAST_PASS_IMAGES SAVE_LOW_CONTRAST_IMAGES SAVE_UNAVAILABLE_CONTRAST_IMAGES TISSUE_CLOSING_RADIUS TISSUE_EDGE_MARGIN_UM TISSUE_GAUSSIAN_SIGMA TISSUE_HOLE_AREA TISSUE_MIN_SIZE TISSUE_THRESHOLD TRIANGLE_THRESHOLD_FACTOR USE_MANUAL_SPATIAL_EXCLUSIONS USE_MANUAL_TISSUE_POLYGON ZOOM_CROP_PADDING_PX ZOOM_MIN_CROP_SIZE_PX'''.split())
 PATH_KEYS={'if_image','mir_image','output_dir','tissue_addition_png',
            'tissue_addition_metadata_json','exclusion_png','exclusion_metadata_json'}
-OPTION_KEYS={'run_label','save_review_figures','individual_galleries',
+OPTION_KEYS={'run_label','overwrite_existing','save_review_figures','individual_galleries',
              'max_individual_images_per_category','skip_existing_gallery_images',
              'allow_interactive_annotation_on_missing'}
 CATEGORIES={'tissue_edge','elongated','irregular_shape','dotted_chain_pattern','dotted_chain',
@@ -564,7 +566,7 @@ def read_config(config_path):
     if o.get('max_individual_images_per_category') is not None and (
         not isinstance(o['max_individual_images_per_category'],int) or o['max_individual_images_per_category']<0):
         raise ValueError('max_individual_images_per_category must be >=0 or null')
-    for key in ('save_review_figures','skip_existing_gallery_images','allow_interactive_annotation_on_missing'):
+    for key in ('overwrite_existing','save_review_figures','skip_existing_gallery_images','allow_interactive_annotation_on_missing'):
         if key in o and not isinstance(o[key],bool):raise ValueError(f'{key} must be boolean')
     if not re.fullmatch(r'[A-Za-z0-9_-]+',str(o.get('run_label','default'))):
         raise ValueError('output_options.run_label must be alphanumeric, underscores or hyphens')
@@ -617,19 +619,37 @@ def _write_json(path, data):
     Path(path).write_text(json.dumps(data,indent=2,ensure_ascii=False,allow_nan=False)+'\n',encoding='utf-8')
 
 
-def _timestamp():
-    return datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S_%fZ')
+def _prepare_flat_output_root(output_root, *, overwrite_existing=False):
+    """Use paths.output_dir directly; avoid accidental loss of prior runs.
+
+    The pre-existing ``annotations/`` directory is allowed, because it may
+    contain reusable manually saved masks; all other previous output requires
+    explicit overwrite_existing=True. We never delete user files.
+    """
+    root=Path(output_root)
+    if root.exists():
+        if not root.is_dir():
+            raise NotADirectoryError(f'Output location exists but is not a directory: {root}')
+        previous=[item for item in root.iterdir() if item.name != 'annotations']
+        if previous and not overwrite_existing:
+            examples=', '.join(item.name for item in previous[:6])
+            raise FileExistsError(
+                f'Output directory is not empty: {root} (found {examples}). '
+                'The flat layout writes to this directory, and could replace previous results. '
+                'Use a new paths.output_dir, back up existing results, or explicitly set '
+                'output_options.overwrite_existing=true. No files were changed.')
+    else:
+        root.mkdir(parents=True,exist_ok=False)
+    return root
 
 
 def run_section(config_file, *,config=None):
-    """Create isolated run artifacts and call the installed spatialmirif workflow."""
+    """Execute one IF section directly inside ``paths.output_dir``."""
     if config is None: config=read_config(config_file)
     inputs=check_inputs(config)
-    output_root=Path(inputs['output_root'])
-    run_slug=str(config['output_options'].get('run_label','default'))
-    run_name=f'{_timestamp()}_{run_slug}_{uuid.uuid4().hex[:6]}'
-    run_root=output_root/'runs'/run_name
-    run_root.mkdir(parents=True,exist_ok=False)
+    run_root=_prepare_flat_output_root(
+        inputs['output_root'],
+        overwrite_existing=config['output_options'].get('overwrite_existing',False))
     requested=run_root/'configuration_requested.json'
     shutil.copy2(config_file,requested)  # preserve user-specified JSON byte-for-byte
     _write_json(run_root/'configuration_effective.json',config)
@@ -671,13 +691,18 @@ def run_section(config_file, *,config=None):
         log.info('Starting section=%s, seed=%s',config['sample_name'],config['parameters']['GLOBAL_RANDOM_SEED'])
         log.info('Configuration snapshot: %s',requested)
         log.info('Input IF: %s; SHA256 %s',config['paths']['if_image'],hashes['if_image'])
-        log.info('Output: %s',run_root)
-        # The wrapper appends sample_name once; no double-nested section folder.
+        log.info('Output directory (no runs/ or section/ nesting): %s',run_root)
+        if config['output_options'].get('overwrite_existing',False):
+            log.warning('overwrite_existing=true: previous files may be overwritten; '
+                        'unrelated existing files are not deleted')
+        # JSON runs are flat: 01_... through FINAL_positive_plaques directly
+        # under paths.output_dir. Stepwise/manual API retains its old layout.
         workflow=IFPositivePlaqueDetection(config['paths']['if_image'],
-            output_dir=run_root,sample_name=config['sample_name'])
+            output_dir=run_root,sample_name=config['sample_name'],
+            append_sample_folder=False)
         result=workflow.Run(parameters=config['parameters'],paths=config['paths'],
             output_options=config['output_options'],logger=log,
-            shared_annotation_dir=output_root/'annotations'/config['sample_name'])
+            shared_annotation_dir=run_root/'annotations'/config['sample_name'])
         status.update({'status':'success','finished_utc':datetime.now(timezone.utc).isoformat(),
                        'counts':result['counts'],'final_output_dir':result['final_output_dir'],
                        'positive_binary_path':result['positive_binary_path'],
