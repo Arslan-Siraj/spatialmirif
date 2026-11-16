@@ -96,7 +96,7 @@
     "MANUAL_INCLUDE_IDS": []
   },
   "output_options": {
-    "run_label": "S1_N3_default",
+    "run_label": "RunIFPositivePlaquesWorkflow_default",
     "save_review_figures": true,
     "individual_galleries": {
       "elongated": false,

@@ -1,3 +1,3 @@
-"""Application-specific workflows composed from general segmentation steps."""
+"""Complete workflows for section."""
 from .IFPositivePlaqueDetection import IFPositivePlaqueDetection
 __all__ = ['IFPositivePlaqueDetection']

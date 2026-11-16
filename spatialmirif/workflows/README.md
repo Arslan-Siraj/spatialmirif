@@ -1,3 +1,6 @@
+# `spatialmirif` alignment QC execution: direct JSON execution
+
+
 # `spatialmirif` IF-positive plaque detection: direct JSON execution
 
 ```powershell
