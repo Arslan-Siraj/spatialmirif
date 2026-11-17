@@ -1,17 +1,17 @@
 {
   "$schema_version": 1,
-  "sample_name": "{section_tag}",
+  "sample_name": "S1_N3",
   "paths": {
-    "patch_manifest_csv": "actual-path-to\\{section_tag}\\{section_tag}_MIR_patch_dataset_workflow_check_with_full\\14_final_dataset\\balanced_positive_negative_manifest.csv",
-    "mir_zarr": "actual-path-to\\{section_tag}\\2.zarr",
-    "mir_info": "actual-path-to\\MMI2_AD_Slide_1_090126_TissuePlus_Transmission_no_SF_INFO.txt",
-    "mir_reference_nrrd": "D:\\Project_Cemos\\with_pymir\\Slide_1\\{section_tag}\\{section_tag}_MIR_1650_pymir_align.nrrd",
-    "if_accepted_ids_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques_workflow\\FINAL_positive_plaques\\{section_tag}_IF_positive_plaques_original_IDs.nrrd",
-    "if_reference_nrrd": "D:\\Project_Cemos\\with_pymir\\Slide_1\\{section_tag}\\{section_tag}_qc_alignment_output\\{section_tag}_qc_alignment_IF_refined_to_MIR.nrrd",
-    "if_analysis_tissue_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_Positive_Plaques_workflow\\15_negative_protection\\analysis_tissue.nrrd",
-    "mir_protected_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_MIR_patch_dataset_workflow_check_with_full\\11_annotations\\MIR_all_protected_regions.nrrd",
-    "mir_negative_eligible_nrrd": "actual-path-to\\{section_tag}\\{section_tag}_MIR_patch_dataset_workflow_check_with_full\\11_annotations\\MIR_negative_eligible.nrrd",
-    "output_dir": ".\\{section_tag}_MIR_hyperspectral_dataset"
+    "patch_manifest_csv": "D:\\Slide_1_spatialmirif\\S1_N3\\S1_N3_MIR_patch_dataset_workflow_check_with_full\\14_final_dataset\\balanced_positive_negative_manifest.csv",
+    "mir_zarr": "D:\\Slide_1_spatialmirif\\S1_N3\\2.zarr",
+    "mir_info": "D:\\Slide_1_spatialmirif\\MMI2_AD_Slide_1_090126_TissuePlus_Transmission_no_SF_INFO.txt",
+    "mir_reference_nrrd": "D:\\Project_Cemos\\with_pymir\\Slide_1\\S1_N3\\S1_N3_MIR_1650_pymir_align.nrrd",
+    "if_accepted_ids_nrrd": "D:\\Slide_1_spatialmirif\\S1_N3\\S1_N3_Positive_Plaques_workflow\\FINAL_positive_plaques\\S1_N3_IF_positive_plaques_original_IDs.nrrd",
+    "if_reference_nrrd": "D:\\Project_Cemos\\with_pymir\\Slide_1\\S1_N3\\S1_N3_qc_alignment_output\\S1_N3_qc_alignment_IF_refined_to_MIR.nrrd",
+    "if_analysis_tissue_nrrd": "D:\\Slide_1_spatialmirif\\S1_N3\\S1_N3_Positive_Plaques_workflow\\15_negative_protection\\analysis_tissue.nrrd",
+    "mir_protected_nrrd": "D:\\Slide_1_spatialmirif\\S1_N3\\S1_N3_MIR_patch_dataset_workflow_check_with_full\\11_annotations\\MIR_all_protected_regions.nrrd",
+    "mir_negative_eligible_nrrd": "D:\\Slide_1_spatialmirif\\S1_N3\\S1_N3_MIR_patch_dataset_workflow_check_with_full\\11_annotations\\MIR_negative_eligible.nrrd",
+    "output_dir": "D:\\Slide_1_spatialmirif\\S1_N3\\S1_N3_MIR_hyperspectral_dataset"
   },
   "parameters": {
     "patch_size": 16,
@@ -37,6 +37,6 @@
     "run_regional_analysis": true,
     "run_registered_comparison": true,
     "run_full_dataset_exploration": true,
-    "continue_on_optional_error": true
+    "continue_on_optional_error": false
   }
 }

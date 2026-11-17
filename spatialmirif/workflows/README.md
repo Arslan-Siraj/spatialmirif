@@ -56,3 +56,19 @@ result = MIRPatchDataset.RunFromConfig(
     r'spatialmirif/workflows/configs/config_MIR_patch_datasets.json'
 )
 ```
+
+# `spatialmirif` IF-positive/Negative hyperspectra extraction: direct JSON execution
+
+```powershell
+python spatialmirif/workflows/MIRHyperspectralDataset.py --config-json spatialmirif/workflows/configs/config_MIR_hyperspectral_dataset.json --check-inputs
+python spatialmirif/workflows/MIRHyperspectralDataset.py --config-json spatialmirif/workflows/configs/config_MIR_hyperspectral_dataset.json
+# Existing dataset only (no new extraction):
+python spatialmirif/workflows/MIRHyperspectralDataset.py --config-json spatialmirif/workflows/configs/config_MIR_hyperspectral_dataset.json --mode figures-only
+```
+
+Or import after installing `spatialmirif`:
+
+```python
+from spatialmirif.workflows import MIRHyperspectralDataset
+result = MIRHyperspectralDataset.RunFromConfig('spatialmirif/workflows/configs/config_MIR_hyperspectral_dataset.json')
+```

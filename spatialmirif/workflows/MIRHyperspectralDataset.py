@@ -468,13 +468,35 @@ def run(config_json, mode='full', check_only=False):
     return result
 
 
-def main():
-    parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config',required=True,help='JSON config with input paths and output options')
-    parser.add_argument('--mode',choices=('full','figures-only'),default='full')
-    parser.add_argument('--check-inputs',action='store_true')
-    args=parser.parse_args()
-    print(json.dumps(run(args.config,args.mode,args.check_inputs),indent=2))
+
+class MIRHyperspectralDataset:
+    """Directly executable, JSON-configured hyperspectral analysis."""
+
+    @classmethod
+    def RunFromConfig(cls, config_json, mode="full"):
+        return run(config_json, mode=mode)
+
+    @classmethod
+    def CheckInputs(cls, config_json):
+        return run(config_json, check_only=True)
 
 
-if __name__=='__main__':main()
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config-json", "--config", dest="config_json", required=True,
+                        help="Path to JSON configuration")
+    parser.add_argument("--mode", choices=("full", "figures-only"), default="full")
+    parser.add_argument("--check-inputs", action="store_true")
+    args = parser.parse_args(argv)
+    try:
+        result = run(args.config_json, mode=args.mode, check_only=args.check_inputs)
+        print(json.dumps(result, indent=2, default=str))
+    except Exception as exc:
+        import sys
+        print(f"ERROR ({type(exc).__name__}): {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
