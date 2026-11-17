@@ -3,5 +3,6 @@
 from .IFPositivePlaqueDetection import IFPositivePlaqueDetection
 from .MIRIFAlignmentQC import MIRIFAlignmentQCWorkflow
 from .MIRPatchDataset import MIRPatchDataset
+from .MIRHyperspectralDataset import MIRHyperspectralDataset
 
-__all__ = ["IFPositivePlaqueDetection", "MIRIFAlignmentQCWorkflow", "MIRPatchDataset"]
+__all__ = ["IFPositivePlaqueDetection", "MIRIFAlignmentQCWorkflow", "MIRPatchDataset", "MIRHyperspectralDataset"]
