@@ -6,6 +6,9 @@ No plaque detection, patch selection, or class rebalancing is performed here.
 from __future__ import annotations
 import argparse
 import json
+import logging
+from datetime import datetime, timezone
+import sys
 import os
 from pathlib import Path
 import re
@@ -140,6 +143,50 @@ def result_paths(cfg):
     }.items()}
 
 
+
+def _timestamp_utc():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _write_json_atomic(path, data):
+    """Write status/report updates without leaving a partially written JSON file."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(path.name + '.tmp')
+    try:
+        temp.write_text(json.dumps(data, indent=2, ensure_ascii=False, default=str), encoding='utf-8')
+        os.replace(temp, path)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def _start_run_logger(output_dir):
+    """Create an isolated file + console logger, avoiding duplicate handlers."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger('spatialmirif.workflows.MIRHyperspectralDataset')
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+        handler.close()
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s',
+                                  datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler = logging.FileHandler(output_dir / 'run.log', mode='a', encoding='utf-8')
+    console_handler = logging.StreamHandler(sys.stdout)
+    for handler in (file_handler, console_handler):
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    return logger
+
+
+def _close_run_logger(logger):
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+        handler.flush()
+        handler.close()
+
+
 def extract_dataset(cfg, *, cube=None, axis=None, valid=None, spatial_shape=None):
     """Read each 16x16xC patch from Zarr without spatial or spectral averaging."""
     s, p = cfg['parameters'], cfg['paths']
@@ -166,6 +213,11 @@ def extract_dataset(cfg, *, cube=None, axis=None, valid=None, spatial_shape=None
     partial = root / 'spectral_patches.partial.npy'
     if partial.exists():
         raise FileExistsError(f'Unfinished previous extraction: {partial}')
+    logger = logging.getLogger('spatialmirif.workflows.MIRHyperspectralDataset')
+    logger.info('EXTRACTION | %d patches | %d positive | %d candidate-negative | size=%dx%d | channels=%d',
+                len(df), int(df.label.eq(1).sum()), int(df.label.eq(0).sum()), size, size, C)
+    logger.info('EXTRACTION | source manifest: %s', p['patch_manifest_csv'])
+    logger.info('EXTRACTION | source Zarr: %s | pooling=%s', p['mir_zarr'], s['zarr_pooling'])
     store = None
     try:
         store = np.lib.format.open_memmap(partial, mode='w+', dtype=np.float32, shape=(len(df), size, size, C))
@@ -177,6 +229,8 @@ def extract_dataset(cfg, *, cube=None, axis=None, valid=None, spatial_shape=None
             if patch.shape != (size, size, C) or not np.isfinite(patch).all():
                 raise ValueError(f'Incomplete/nonfinite spectrum in {row.patch_id}')
             store[i] = patch
+            if (i + 1) % 200 == 0 or (i + 1) == len(df):
+                logger.info('EXTRACTION | %d/%d patches saved to temporary dataset', i + 1, len(df))
         store.flush()
         del store
         store = None
@@ -194,7 +248,9 @@ def extract_dataset(cfg, *, cube=None, axis=None, valid=None, spatial_shape=None
                 'candidate_negative': int(df.label.eq(0).sum()), 'zarr_reader': s,
                 'source_paths': p, 'spectral_axis_units': 'cm^-1',
                 'spatial_averaging_applied_to_dataset': False}
-    paths['metadata'].write_text(json.dumps(metadata, indent=2), encoding='utf-8')
+    _write_json_atomic(paths['metadata'], metadata)
+    logger.info('EXTRACTION | complete | tensor shape=%s | %.1f MiB',
+                (len(df), size, size, C), paths['X'].stat().st_size / 1024**2)
     return paths
 
 
@@ -439,33 +495,117 @@ def registered_comparison(cfg, X, labels, axis, idx):
 
 
 def run(config_json, mode='full', check_only=False):
-    cfg=read_config(config_json)
-    if check_only: return {'inputs':check_inputs(cfg),'output_dir':cfg['paths']['output_dir']}
-    if mode not in ('full','figures-only'):raise ValueError('mode must be full or figures-only')
-    check_inputs(cfg,strict=True)
-    if mode=='full':extract_dataset(cfg)
-    X,labels,axis,idx=load_dataset(cfg)
-    paths=result_paths(cfg); result={'sample':cfg['sample_name'],'mode':mode,'dataset_shape':list(X.shape),'figures':[],'tasks':{},'errors':{}}
-    tasks=[]
-    if cfg['output_options']['save_figures']:
-        tasks.append(('patch_overview', lambda:plot_patch_overview(cfg,X,labels,axis,idx)))
-        if cfg['output_options']['run_full_dataset_exploration']:
-            tasks.append(('full_dataset_exploration',lambda:full_dataset_exploration(cfg,X,labels,axis)))
-        if cfg['output_options']['run_regional_analysis']:
-            tasks.append(('regional_analysis',lambda:regional_analysis(cfg,X,labels,axis,idx)))
-        if cfg['output_options']['run_registered_comparison']:
-            tasks.append(('registered_comparison',lambda:registered_comparison(cfg,X,labels,axis,idx)))
-    for name,fn in tasks:
-        try:
-            files=fn();result['tasks'][name]={'status':'ok','count':len(files)};result['figures'].extend(files)
-        except Exception as exc:
-            result['tasks'][name]={'status':'error'}
-            result['errors'][name]={'message':str(exc),'traceback':traceback.format_exc()}
-            print(f'{name}: {type(exc).__name__}: {exc}')
-            if not cfg['output_options']['continue_on_optional_error']:
-                paths['report'].write_text(json.dumps(result,indent=2),encoding='utf-8');raise
-    paths['report'].write_text(json.dumps(result,indent=2),encoding='utf-8')
-    return result
+    """Run the complete post-patch workflow with auditable step-by-step logging."""
+    cfg = read_config(config_json)
+    if check_only:
+        # Preserve the read-only check-inputs behavior: no logs/output folders.
+        return {'inputs': check_inputs(cfg), 'output_dir': cfg['paths']['output_dir']}
+    if mode not in ('full', 'figures-only'):
+        raise ValueError('mode must be full or figures-only')
+
+    paths = result_paths(cfg)
+    output_dir = Path(cfg['paths']['output_dir'])
+    logger = _start_run_logger(output_dir)
+    status_path = output_dir / 'run_status.json'
+    status = {'status': 'running', 'sample_name': cfg['sample_name'],
+              'mode': mode, 'started_utc': _timestamp_utc(),
+              'config_json': str(Path(config_json).resolve()),
+              'output_dir': str(output_dir), 'steps': {}}
+    result = {'sample': cfg['sample_name'], 'mode': mode, 'figures': [],
+              'tasks': {}, 'errors': {}}
+    _write_json_atomic(status_path, status)
+
+    try:
+        logger.info('START | sample=%s | mode=%s', cfg['sample_name'], mode)
+        logger.info('CONFIG | %s', Path(config_json).resolve())
+        logger.info('OUTPUT | %s', output_dir.resolve())
+        logger.info('PARAMETERS | %s', json.dumps(cfg['parameters'], sort_keys=True))
+        logger.info('OPTIONS | %s', json.dumps(cfg['output_options'], sort_keys=True))
+        logger.info('INPUT CHECK | validating required files')
+        checked = check_inputs(cfg, strict=True)
+        for name, item in checked.items():
+            if item['path']:
+                level = logging.INFO if item['exists'] else logging.WARNING
+                logger.log(level, 'INPUT | %s | %s | %s', name,
+                           'found' if item['exists'] else 'missing', item['path'])
+        status['steps']['input_validation'] = 'success'
+        _write_json_atomic(status_path, status)
+
+        if mode == 'full':
+            logger.info('STEP | full hyperspectral patch extraction started')
+            extract_dataset(cfg)
+            status['steps']['extraction'] = 'success'
+            logger.info('STEP | full hyperspectral patch extraction complete')
+        else:
+            status['steps']['extraction'] = 'reused_existing_dataset'
+            logger.info('STEP | figures-only; preserving existing spectral arrays')
+        _write_json_atomic(status_path, status)
+
+        logger.info('STEP | reopening and validating saved dataset')
+        X, labels, axis, idx = load_dataset(cfg)
+        result['dataset_shape'] = list(X.shape)
+        status['steps']['saved_dataset_validation'] = 'success'
+        logger.info('DATASET | shape=%s | positives=%d | negatives=%d | spectral channels=%d',
+                    X.shape, int(np.count_nonzero(labels == 1)),
+                    int(np.count_nonzero(labels == 0)), len(axis))
+        _write_json_atomic(status_path, status)
+
+        tasks = []
+        if cfg['output_options']['save_figures']:
+            tasks.append(('patch_overview', lambda: plot_patch_overview(cfg, X, labels, axis, idx)))
+            if cfg['output_options']['run_full_dataset_exploration']:
+                tasks.append(('full_dataset_exploration',
+                              lambda: full_dataset_exploration(cfg, X, labels, axis)))
+            if cfg['output_options']['run_regional_analysis']:
+                tasks.append(('regional_analysis',
+                              lambda: regional_analysis(cfg, X, labels, axis, idx)))
+            if cfg['output_options']['run_registered_comparison']:
+                tasks.append(('registered_comparison',
+                              lambda: registered_comparison(cfg, X, labels, axis, idx)))
+        else:
+            logger.info('FIGURES | disabled by output_options.save_figures=false')
+
+        for name, function in tasks:
+            logger.info('FIGURES | %s started', name)
+            try:
+                files = function()
+                result['tasks'][name] = {'status': 'ok', 'count': len(files)}
+                result['figures'].extend(files)
+                status['steps'][name] = 'success'
+                logger.info('FIGURES | %s complete | %d files', name, len(files))
+                for filename in files:
+                    logger.info('FIGURE SAVED | %s', filename)
+            except Exception as exc:
+                result['tasks'][name] = {'status': 'error'}
+                result['errors'][name] = {'message': str(exc),
+                                          'traceback': traceback.format_exc()}
+                status['steps'][name] = 'failed'
+                logger.exception('FIGURES | %s failed', name)
+                _write_json_atomic(paths['report'], result)
+                _write_json_atomic(status_path, status)
+                if not cfg['output_options']['continue_on_optional_error']:
+                    raise
+
+        result['completed_utc'] = _timestamp_utc()
+        _write_json_atomic(paths['report'], result)
+        status['status'] = 'partial_success' if result['errors'] else 'success'
+        status['finished_utc'] = _timestamp_utc()
+        status['figure_count'] = len(result['figures'])
+        status['failed_optional_steps'] = list(result['errors'])
+        _write_json_atomic(status_path, status)
+        logger.info('%s | %d figures | %d failed optional steps',
+                    status['status'].upper(), len(result['figures']), len(result['errors']))
+        logger.info('REPORT | %s', paths['report'])
+        return result
+    except Exception as error:
+        status.update(status='failed', finished_utc=_timestamp_utc(),
+                      error_type=type(error).__name__, error=str(error),
+                      traceback=traceback.format_exc())
+        _write_json_atomic(status_path, status)
+        logger.exception('FAILED | sample=%s | mode=%s', cfg['sample_name'], mode)
+        raise
+    finally:
+        _close_run_logger(logger)
 
 
 
