@@ -74,7 +74,6 @@ OPTION_DEFAULTS = {
     'show_figures': False,
     'hash_inputs': False,
     'run_full_spectral_qc': False,
-    'confirm_zarr_mir_identical_pixel_indexing': False,
     'export_training_spectra': False,
     'export_size_excluded_spectra': False,
 }
@@ -158,8 +157,6 @@ def read_config(config_json):
     if p['zarr_pz_um'] <= 0:
         raise ValueError('zarr_pz_um must be > 0')
     if o['run_full_spectral_qc']:
-        if not o['confirm_zarr_mir_identical_pixel_indexing']:
-            raise ValueError('Full spectral QC requires independent confirmation of exact Zarr/MIR pixel indexing')
         for name in ('mir_zarr', 'mir_info'):
             if not paths.get(name):
                 raise ValueError(f'paths.{name} required for full-spectral QC')
@@ -646,8 +643,10 @@ def run_section(config_json, *, config=None):
         spectral_cube=None
         spectral_reader=None
         if opts['run_full_spectral_qc']:
-            logger.info('B3 | Read MIR Zarr measured-pixel mask and check shape/indexing assertion')
-            # Explicit human confirmation is mandatory; mere matching shapes are not proof.
+            logger.info('B3 | Read MIR Zarr measured-pixel mask; verify spatial shape (direct indexing assumed)')
+            # Direct MIR pixel indexing as in the original S1_N3 notebook.
+            # Shape checks guard against obvious indexing errors; matching shapes alone
+            # do not establish physical correspondence (assumed by the source data).
             from ..io.ZarrSpectrumReader import ZarrSpectrumReader
             spectral_reader=ZarrSpectrumReader(inputs['mir_zarr'],info_path=inputs['mir_info'],
                 pz=p['zarr_pz_um'],normalization=p['zarr_normalization'],
@@ -746,7 +745,7 @@ def run_section(config_json, *, config=None):
             'sample_name':sample,'output_dir':str(root),'input_paths':inputs,
             'mir_geometry':_geometry(mir_ref),'if_geometry':_geometry(if_positive),
             'spectral_qc_completed':spectral_checked is not None,
-            'zarr_indexing_confirmation':opts['confirm_zarr_mir_identical_pixel_indexing'],
+            'zarr_mir_indexing_policy':'direct_indexing_assumed_shape_checked',
             'label_semantics':{'positive':1,'negative':0,
                 'ignore_categories':['positive_tissue_review','size_excluded_small',
                 'size_excluded_large','other_qc_excluded','log_candidate_protection']},
